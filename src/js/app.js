@@ -123,6 +123,7 @@ class ChartAnimatorApp {
     selectTemplate(item) {
         this.templateItems.forEach(i => i.classList.remove('active'));
         item.classList.add('active');
+        const previousChartType = this.chartType;
         this.chartType = item.dataset.type;
         
         // Update the renderer with the new chart type
@@ -143,8 +144,35 @@ class ChartAnimatorApp {
                     <th></th>
                 `;
                 
-                // Add default rows if table is empty
+                // Clear the table body
                 const tbody = this.dataTable.querySelector('tbody');
+                tbody.innerHTML = '';
+                
+                // If we have stat bar data, convert the first stat to regular data
+                if (previousChartType === 'statBar') {
+                    const rows = document.querySelectorAll('tbody tr');
+                    if (rows.length > 0) {
+                        // Get data from the first stat bar
+                        const inputs = rows[0].querySelectorAll('input');
+                        if (inputs.length >= 5) {
+                            const label = inputs[0].value;
+                            const value = inputs[1].value;
+                            const color = inputs[4].value;
+                            
+                            // Add a row with this data
+                            const newRow = document.createElement('tr');
+                            newRow.innerHTML = `
+                                <td><input type="text" value="${label}"></td>
+                                <td><input type="number" value="${value}"></td>
+                                <td><input type="color" value="${color}"></td>
+                                <td><button class="remove-row-btn">×</button></td>
+                            `;
+                            tbody.appendChild(newRow);
+                        }
+                    }
+                }
+                
+                // Add default rows if table is empty
                 if (tbody.querySelectorAll('tr').length === 0) {
                     tbody.innerHTML = `
                         <tr>
@@ -164,12 +192,15 @@ class ChartAnimatorApp {
             }
         }
         
+        // Make sure add row button is enabled when switching from stat bar
+        if (previousChartType === 'statBar' && this.chartType !== 'statBar') {
+            this.addRowBtn.disabled = false;
+        }
+        
+        this.updateChartFromTable();
         this.generateAnimation();
     }
     
-    /**
-     * Set up the data input table for StatBar chart type
-     */
     setupStatBarDataInput() {
         // Clear existing table data
         const tbody = this.dataTable.querySelector('tbody');
@@ -231,6 +262,11 @@ class ChartAnimatorApp {
                 <td><input type="color" value="${randomColor}"></td>
                 <td><button class="remove-row-btn">×</button></td>
             `;
+            
+            // Disable add row button if we've reached the maximum number of rows (3) for stat bars
+            if (this.addRowBtn) {
+                this.addRowBtn.disabled = tbody.querySelectorAll('tr').length >= 2; // Disable at 2 rows since we're about to add 1 more
+            }
         } else {
             // Generate a random color
             const randomColor = `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
@@ -241,14 +277,14 @@ class ChartAnimatorApp {
                 <td><input type="color" value="${randomColor}"></td>
                 <td><button class="remove-row-btn">×</button></td>
             `;
+            
+            // No row limit for other chart types
+            if (this.addRowBtn) {
+                this.addRowBtn.disabled = false;
+            }
         }
         
         tbody.appendChild(newRow);
-        
-        // Disable add row button if we've reached the maximum number of rows (3)
-        if (this.addRowBtn) {
-            this.addRowBtn.disabled = tbody.querySelectorAll('tr').length >= 3;
-        }
     }
     
     updateChartFromTable() {
@@ -286,7 +322,7 @@ class ChartAnimatorApp {
                 }
             });
             
-            // Disable add row button if we've reached the maximum number of rows (3)
+            // Disable add row button if we've reached the maximum number of rows (3) for stat bars
             if (this.addRowBtn) {
                 this.addRowBtn.disabled = rows.length >= 3;
             }
@@ -299,6 +335,11 @@ class ChartAnimatorApp {
                 
                 chartData.push({ label, value, color });
             });
+            
+            // No row limit for other chart types
+            if (this.addRowBtn) {
+                this.addRowBtn.disabled = false;
+            }
         }
         
         this.dataManager.setData(chartData);
