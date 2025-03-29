@@ -583,7 +583,7 @@ export class ChartRenderer {
             const barSpacing = 6;  // Space between bars
             const barHeight = 90;  // Height of each bar
             const totalBars = 20; // Total number of bars to display
-            const filledColor = '#A239FF'; // Purple color for filled bars
+            const filledColor = rowData.color || '#A239FF'; // Use custom color or default to purple
             const emptyColor = '#EEEEEE';  // Light color for empty bars
             
             // Calculate values

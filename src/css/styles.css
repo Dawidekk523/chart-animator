@@ -302,6 +302,43 @@ body {
   color: var(--secondary-color);
 }
 
+.stat-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+
+.stat-color {
+  width: 40px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.stat-color::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.stat-color::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
+.remove-stat-row {
+  background: none;
+  border: none;
+  color: #ff4444;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 5px;
+}
+
 /* Settings Panel */
 .settings-panel {
   display: flex;
@@ -357,6 +394,9 @@ body {
   color: var(--text-light);
   font-family: inherit;
   outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
 }
 
 .theme-options {

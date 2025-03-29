@@ -182,6 +182,7 @@ class ChartAnimatorApp {
             <th>Current Value</th>
             <th>Max Value</th>
             <th>Min Value</th>
+            <th>Color</th>
         `;
         
         // Add a single row for the StatBar
@@ -191,6 +192,7 @@ class ChartAnimatorApp {
             <td><input type="number" value="65" min="0"></td>
             <td><input type="number" value="100" min="0"></td>
             <td><input type="number" value="0" min="0"></td>
+            <td><input type="color" value="#A239FF"></td>
         `;
         
         tbody.appendChild(newRow);
@@ -233,11 +235,12 @@ class ChartAnimatorApp {
                 const row = rows[0]; // StatBar only uses the first row
                 const inputs = row.querySelectorAll('input');
                 
-                if (inputs.length >= 3) {
+                if (inputs.length >= 4) {
                     const label = inputs[0].value;
                     const value = parseFloat(inputs[1].value);
                     const max = parseFloat(inputs[2].value);
                     const min = inputs.length >= 4 ? parseFloat(inputs[3].value) : 0;
+                    const color = inputs.length >= 5 ? inputs[4].value : '#A239FF';
                     
                     // StatBar only needs one data item with special properties
                     chartData.push({ 
@@ -245,7 +248,7 @@ class ChartAnimatorApp {
                         value, 
                         max, 
                         min,
-                        color: '#A239FF' // Default color for StatBar
+                        color
                     });
                 }
             }
