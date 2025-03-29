@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart Animator - Create Beautiful Chart Animations</title>
+    <link rel="stylesheet" href="src/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="logo">Chart<span>Animator</span></div>
+            <div class="actions">
+                <button id="exportMP4Btn" class="btn btn-primary">Export MP4</button>
+                <button id="exportGIFBtn" class="btn btn-secondary">Export GIF</button>
+            </div>
+        </header>
+
+        <main class="app-main">
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <h3>Chart Templates</h3>
+                    <div class="template-list">
+                        <div class="template-item active" data-type="bar">
+                            <div class="template-preview bar-preview"></div>
+                            <span>Bar Chart</span>
+                        </div>
+                        <div class="template-item" data-type="line">
+                            <div class="template-preview line-preview"></div>
+                            <span>Line Chart</span>
+                        </div>
+                        <div class="template-item" data-type="area">
+                            <div class="template-preview area-preview"></div>
+                            <span>Area Chart</span>
+                        </div>
+                        <div class="template-item" data-type="pie">
+                            <div class="template-preview pie-preview"></div>
+                            <span>Pie Chart</span>
+                        </div>
+                        <div class="template-item" data-type="donut">
+                            <div class="template-preview donut-preview"></div>
+                            <span>Donut Chart</span>
+                        </div>
+                        <div class="template-item" data-type="statBar">
+                            <div class="template-preview statbar-preview"></div>
+                            <span>Stat Bar</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Data Input</h3>
+                    <div class="data-input-panel">
+                        <button id="importCSVBtn" class="btn btn-outlined">Import CSV</button>
+                        <div class="data-grid-container">
+                            <table id="dataTable" class="data-grid">
+                                <thead>
+                                    <tr>
+                                        <th>Label</th>
+                                        <th>Value</th>
+                                        <th>Color</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><input type="text" value="Category 1"></td>
+                                        <td><input type="number" value="42"></td>
+                                        <td><input type="color" value="#4A7CFF"></td>
+                                        <td><button class="remove-row-btn">×</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="text" value="Category 2"></td>
+                                        <td><input type="number" value="78"></td>
+                                        <td><input type="color" value="#FF4A7C"></td>
+                                        <td><button class="remove-row-btn">×</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="text" value="Category 3"></td>
+                                        <td><input type="number" value="56"></td>
+                                        <td><input type="color" value="#7CFF4A"></td>
+                                        <td><button class="remove-row-btn">×</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button id="addRowBtn" class="btn btn-small">+ Add Row</button>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Animation Settings</h3>
+                    <div class="settings-panel">
+                        <div class="setting-group">
+                            <label for="animDuration">Duration (seconds)</label>
+                            <input type="range" id="animDuration" min="1" max="10" value="3" step="0.5">
+                            <span id="animDurationValue">3.0</span>
+                        </div>
+                        <div class="setting-group">
+                            <label for="animEasing">Easing</label>
+                            <select id="animEasing">
+                                <option value="linear">Linear</option>
+                                <option value="easeInOut" selected>Ease In-Out</option>
+                                <option value="elastic">Elastic</option>
+                                <option value="bounce">Bounce</option>
+                            </select>
+                        </div>
+                        <div class="setting-group">
+                            <label for="themePicker">Theme</label>
+                            <div class="theme-options">
+                                <div class="theme-option active" data-theme="dark"></div>
+                                <div class="theme-option" data-theme="light"></div>
+                                <div class="theme-option" data-theme="gradient"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <button id="generateBtn" class="btn btn-large btn-primary">Generate Animation</button>
+                </div>
+            </div>
+
+            <div class="preview-area">
+                <div class="preview-container">
+                    <canvas id="chartCanvas"></canvas>
+                </div>
+                <div class="timeline-controls">
+                    <button id="playPauseBtn" class="control-btn play-btn"></button>
+                    <input type="range" id="timeSlider" min="0" max="100" value="0">
+                    <span id="currentTimeDisplay">0:00 / 0:00</span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for export options -->
+    <div id="exportModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Export Settings</h2>
+                <button class="close-modal-btn">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label for="exportWidth">Width (px)</label>
+                    <input type="number" id="exportWidth" value="1920">
+                </div>
+                <div class="setting-group">
+                    <label for="exportHeight">Height (px)</label>
+                    <input type="number" id="exportHeight" value="1080">
+                </div>
+                <div class="setting-group">
+                    <label for="exportFPS">Framerate (FPS)</label>
+                    <input type="number" id="exportFPS" value="30">
+                </div>
+                <div class="setting-group">
+                    <label for="exportQuality">Quality</label>
+                    <select id="exportQuality">
+                        <option value="high">High</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelExportBtn" class="btn btn-secondary">Cancel</button>
+                <button id="confirmExportBtn" class="btn btn-primary">Export</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="src/js/app.js" type="module"></script>
+</body>
+</html>
