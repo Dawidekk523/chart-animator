@@ -183,9 +183,10 @@ class ChartAnimatorApp {
             <th>Max Value</th>
             <th>Min Value</th>
             <th>Color</th>
+            <th></th>
         `;
         
-        // Add a single row for the StatBar
+        // Add a default row for the StatBar
         const newRow = document.createElement('tr');
         newRow.innerHTML = `
             <td><input type="text" value="Complete Tasks"></td>
@@ -193,9 +194,13 @@ class ChartAnimatorApp {
             <td><input type="number" value="100" min="0"></td>
             <td><input type="number" value="0" min="0"></td>
             <td><input type="color" value="#A239FF"></td>
+            <td><button class="remove-row-btn">×</button></td>
         `;
         
         tbody.appendChild(newRow);
+        
+        // Make sure add row button is usable for stat bars
+        this.addRowBtn.disabled = false;
     }
     
     selectTheme(option) {
@@ -212,15 +217,31 @@ class ChartAnimatorApp {
         const tbody = this.dataTable.querySelector('tbody');
         const newRow = document.createElement('tr');
         
-        // Generate a random color
-        const randomColor = `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
-        
-        newRow.innerHTML = `
-            <td><input type="text" value="New Item"></td>
-            <td><input type="number" value="50"></td>
-            <td><input type="color" value="${randomColor}"></td>
-            <td><button class="remove-row-btn">×</button></td>
-        `;
+        // Special handling for StatBar chart type
+        if (this.chartType === 'statBar') {
+            // Generate a random color with hue in the purple/blue range
+            const hue = 240 + Math.floor(Math.random() * 120);
+            const randomColor = `hsl(${hue}, 80%, 60%)`;
+            
+            newRow.innerHTML = `
+                <td><input type="text" value="New Stat"></td>
+                <td><input type="number" value="50" min="0"></td>
+                <td><input type="number" value="100" min="0"></td>
+                <td><input type="number" value="0" min="0"></td>
+                <td><input type="color" value="${randomColor}"></td>
+                <td><button class="remove-row-btn">×</button></td>
+            `;
+        } else {
+            // Generate a random color
+            const randomColor = `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
+            
+            newRow.innerHTML = `
+                <td><input type="text" value="New Item"></td>
+                <td><input type="number" value="50"></td>
+                <td><input type="color" value="${randomColor}"></td>
+                <td><button class="remove-row-btn">×</button></td>
+            `;
+        }
         
         tbody.appendChild(newRow);
     }
@@ -231,8 +252,8 @@ class ChartAnimatorApp {
         
         // Special handling for StatBar chart type
         if (this.chartType === 'statBar') {
-            if (rows.length > 0) {
-                const row = rows[0]; // StatBar only uses the first row
+            // Process all rows for stat bars (not just the first one)
+            rows.forEach(row => {
                 const inputs = row.querySelectorAll('input');
                 
                 if (inputs.length >= 4) {
@@ -242,7 +263,6 @@ class ChartAnimatorApp {
                     const min = inputs.length >= 4 ? parseFloat(inputs[3].value) : 0;
                     const color = inputs.length >= 5 ? inputs[4].value : '#A239FF';
                     
-                    // StatBar only needs one data item with special properties
                     chartData.push({ 
                         label, 
                         value, 
@@ -251,7 +271,7 @@ class ChartAnimatorApp {
                         color
                     });
                 }
-            }
+            });
         } else {
             // Normal handling for other chart types
             rows.forEach(row => {

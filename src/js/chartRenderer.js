@@ -559,8 +559,11 @@ export class ChartRenderer {
         const rowGap = 140; // Gap between rows
         const containerPadding = 20; // Padding around all stat bars
         
+        // Check if data is an array of rows or a single row
+        const dataRows = Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' ? data : [data];
+        
         // Limit data to maximum allowed rows
-        const limitedData = data.slice(0, MAX_ROWS);
+        const limitedData = dataRows.slice(0, MAX_ROWS);
         const rowCount = limitedData.length;
         
         // Background color
@@ -583,7 +586,7 @@ export class ChartRenderer {
             const barSpacing = 6;  // Space between bars
             const barHeight = 90;  // Height of each bar
             const totalBars = 20; // Total number of bars to display
-            const filledColor = rowData.color || '#A239FF'; // Use custom color or default to purple
+            const filledColor = rowData.color || `hsl(${(rowIndex * 60 + 260) % 360}, 100%, 65%)`; // Use custom color or generate based on index
             const emptyColor = '#EEEEEE';  // Light color for empty bars
             
             // Calculate values
@@ -617,6 +620,28 @@ export class ChartRenderer {
             const startX = this.width / 2 - totalWidth / 2;
             const startY = rowY;
             
+            // Handle text overlap prevention
+            const minMaxPadding = 25; // Minimum pixel distance between labels
+            
+            // Calculate the displayed value using the eased progress for smoother number changes
+            const progressValue = Math.round(minValue + (value - minValue) * easedProgress);
+            
+            // Handle text width measurements
+            const valueWidth = this.ctx.measureText(progressValue.toString()).width;
+            const minWidth = this.ctx.measureText(minValue.toString()).width;
+            const maxWidth = this.ctx.measureText(maxValue.toString()).width;
+            
+            // Position calculation for exact number placement
+            const firstBarX = startX + barWidth/2;
+            const lastBarX = startX + totalWidth - barWidth/2;
+            
+            // Calculate value position - should be at the last filled or partially filled pill
+            let valueBarIndex = filledBarsInteger;
+            if (partialFillRatio <= 0 && valueBarIndex > 0) {
+                valueBarIndex -= 1; // If no partial fill and we have full bars, use the last full bar
+            }
+            const valueBarX = startX + valueBarIndex * (barWidth + barSpacing) + barWidth/2;
+            
             // Draw bars
             for (let i = 0; i < totalBars; i++) {
                 const barX = startX + i * (barWidth + barSpacing);
@@ -635,120 +660,96 @@ export class ChartRenderer {
                     fillRatio = partialFillRatio;
                 }
                 
-                // Set color based on fill state
-                this.ctx.fillStyle = (isFilled || isPartiallyFilled) ? filledColor : emptyColor;
+                // Draw each bar with its appropriate fill state
+                const radius = barWidth / 2;
                 
-                // For bars that are completely filled or empty
-                if (!isPartiallyFilled) {
-                    // Simpler and more accurate approach for pill shape
-                    this.ctx.beginPath();
-                    const radius = barWidth / 2;
-                    this.ctx.arc(barX + radius, startY + radius, radius, Math.PI, 0, false);
-                    this.ctx.lineTo(barX + barWidth, startY + barHeight - radius);
-                    this.ctx.arc(barX + radius, startY + barHeight - radius, radius, 0, Math.PI, false);
-                    this.ctx.closePath();
-                    this.ctx.fill();
-                } else {
-                    // For the bar that's partially filled, we'll draw it in two parts
-                    
-                    // 1. First draw the empty (background) pill
-                    this.ctx.fillStyle = emptyColor;
-                    this.ctx.beginPath();
-                    const radius = barWidth / 2;
-                    this.ctx.arc(barX + radius, startY + radius, radius, Math.PI, 0, false);
-                    this.ctx.lineTo(barX + barWidth, startY + barHeight - radius);
-                    this.ctx.arc(barX + radius, startY + barHeight - radius, radius, 0, Math.PI, false);
-                    this.ctx.closePath();
-                    this.ctx.fill();
-                    
-                    // 2. Draw the filled portion as a rectangle with proper height
+                // First draw the empty (background) pill for all bars
+                this.ctx.fillStyle = emptyColor;
+                this.ctx.beginPath();
+                this.ctx.arc(barX + radius, startY + radius, radius, Math.PI, 0, false);
+                this.ctx.lineTo(barX + barWidth, startY + barHeight - radius);
+                this.ctx.arc(barX + radius, startY + barHeight - radius, radius, 0, Math.PI, false);
+                this.ctx.closePath();
+                this.ctx.fill();
+                
+                // Then draw the filled portion for filled or partially filled bars
+                if (isFilled || isPartiallyFilled) {
                     this.ctx.fillStyle = filledColor;
-                    const filledHeight = barHeight * fillRatio;
-                    const filledStartY = startY + barHeight - filledHeight;
                     
-                    // Draw a rounded rectangle for the filled portion
-                    this.ctx.beginPath();
-                    
-                    if (fillRatio >= 0.5) {
-                        // If filling more than half, include the bottom rounded part
-                        this.ctx.arc(barX + radius, startY + barHeight - radius, radius, 0, Math.PI, false);
-                        this.ctx.lineTo(barX, filledStartY);
-                        this.ctx.lineTo(barX + barWidth, filledStartY);
+                    if (isFilled) {
+                        // For completely filled bars, draw the full pill
+                        this.ctx.beginPath();
+                        this.ctx.arc(barX + radius, startY + radius, radius, Math.PI, 0, false);
                         this.ctx.lineTo(barX + barWidth, startY + barHeight - radius);
-                    } else {
-                        // Just draw a rectangle for small fill amounts
-                        this.ctx.rect(barX, filledStartY, barWidth, filledHeight);
+                        this.ctx.arc(barX + radius, startY + barHeight - radius, radius, 0, Math.PI, false);
+                        this.ctx.closePath();
+                        this.ctx.fill();
+                    } else if (isPartiallyFilled) {
+                        // For partially filled bars, draw the filled portion with proper rounded corners
+                        const filledHeight = barHeight * fillRatio;
+                        const filledStartY = startY + barHeight - filledHeight;
+                        
+                        this.ctx.beginPath();
+                        
+                        // Always draw the rounded bottom part
+                        this.ctx.moveTo(barX, startY + barHeight - radius);
+                        this.ctx.arc(barX + radius, startY + barHeight - radius, radius, Math.PI, Math.PI * 0.5, true);
+                        this.ctx.lineTo(barX + barWidth - radius, startY + barHeight);
+                        this.ctx.arc(barX + barWidth - radius, startY + barHeight - radius, radius, Math.PI * 0.5, 0, true);
+                        
+                        // If fillRatio is high (>0.85), start rounding the top corners as well for a smooth transition
+                        if (fillRatio > 0.85) {
+                            // Calculate how much to round the top corners (0 at 0.85, full radius at 1.0)
+                            const topRoundingFactor = (fillRatio - 0.85) / 0.15;
+                            const topRadius = radius * topRoundingFactor;
+                            
+                            // Top right corner with progressive rounding
+                            this.ctx.lineTo(barX + barWidth, filledStartY + topRadius);
+                            if (topRadius > 0) {
+                                this.ctx.arc(barX + barWidth - topRadius, filledStartY + topRadius, topRadius, 0, Math.PI * 1.5, false);
+                            }
+                            
+                            // Top left corner with progressive rounding
+                            this.ctx.lineTo(barX + topRadius, filledStartY);
+                            if (topRadius > 0) {
+                                this.ctx.arc(barX + topRadius, filledStartY + topRadius, topRadius, Math.PI * 1.5, Math.PI, false);
+                            }
+                        } else {
+                            // Simpler straight lines for lower fill levels
+                            this.ctx.lineTo(barX + barWidth, filledStartY);
+                            this.ctx.lineTo(barX, filledStartY);
+                        }
+                        
+                        // Close path back to start
+                        this.ctx.lineTo(barX, startY + barHeight - radius);
+                        
+                        this.ctx.closePath();
+                        this.ctx.fill();
                     }
-                    
-                    this.ctx.closePath();
-                    this.ctx.fill();
                 }
             }
             
-            // Position calculation for exact number placement
-            const firstBarX = startX + barWidth/2;
-            const lastBarX = startX + totalWidth - barWidth/2;
-            const middleBarX = startX + (filledBarsInteger > 0 ? filledBarsInteger : 0) * (barWidth + barSpacing) + barWidth/2;
+            // Now draw all text elements after the bars are drawn
+            this.ctx.fillStyle = '#FFFFFF';
             
-            // Draw label
-            this.ctx.fillStyle = '#FFFFFF'; // White text
+            // Title at the top
             this.ctx.font = 'bold 18px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(rowData.label || 'Stats ' + (rowIndex + 1), this.width / 2, startY + barHeight + 45);
+            const title = rowData.label || 'Stats ' + (rowIndex + 1);
+            this.ctx.fillText(title, this.width / 2, startY - 40);
             
-            // Draw value indicators
-            this.ctx.fillStyle = '#FFFFFF'; // White text
+            // Min value at left
             this.ctx.font = 'bold 16px Arial';
-            
-            // Min value (exactly under first bar)
             this.ctx.textAlign = 'left';
-            this.ctx.fillText(minValue, firstBarX - 5, startY + barHeight + 25);
+            this.ctx.fillText(minValue, firstBarX - minWidth/2, startY - 12);
             
-            // Current value (positioned under the last filled bar)
-            // Calculate the displayed value using the eased progress for smoother number changes
-            const progressValue = Math.round(minValue + (value - minValue) * easedProgress);
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText(progressValue, middleBarX, startY + barHeight + 25);
-             
-            // Max value (exactly under last bar)
+            // Max value at right
             this.ctx.textAlign = 'right';
-            this.ctx.fillText(maxValue, lastBarX + 5, startY + barHeight + 25);
-             
-            // Draw "New Stats" tooltip near the current value if progress is complete
-            if (easedProgress >= 0.99) {
-                const tooltipX = middleBarX;
-                const tooltipY = startY - 45;  // Place tooltip above the bars
-                const tooltipWidth = 120;
-                const tooltipHeight = 36;
-                 
-                // Draw tooltip bubble
-                this.ctx.fillStyle = '#FFFFFF';
-                this.ctx.beginPath();
-                // Rounded rectangle tooltip with 18px border radius
-                const cornerRadius = tooltipHeight / 2;  // Fully rounded corners for pill shape
-                this.ctx.moveTo(tooltipX - tooltipWidth/2 + cornerRadius, tooltipY);
-                this.ctx.lineTo(tooltipX + tooltipWidth/2 - cornerRadius, tooltipY);
-                this.ctx.arcTo(tooltipX + tooltipWidth/2, tooltipY, tooltipX + tooltipWidth/2, tooltipY + cornerRadius, cornerRadius);
-                this.ctx.lineTo(tooltipX + tooltipWidth/2, tooltipY + tooltipHeight - cornerRadius);
-                this.ctx.arcTo(tooltipX + tooltipWidth/2, tooltipY + tooltipHeight, tooltipX + tooltipWidth/2 - cornerRadius, tooltipY + tooltipHeight, cornerRadius);
-                this.ctx.lineTo(tooltipX + cornerRadius, tooltipY + tooltipHeight);
-                this.ctx.arcTo(tooltipX - tooltipWidth/2, tooltipY + tooltipHeight, tooltipX - tooltipWidth/2, tooltipY + tooltipHeight - cornerRadius, cornerRadius);
-                this.ctx.lineTo(tooltipX - tooltipWidth/2, tooltipY + cornerRadius);
-                this.ctx.arcTo(tooltipX - tooltipWidth/2, tooltipY, tooltipX - tooltipWidth/2 + cornerRadius, tooltipY, cornerRadius);
-                 
-                // Arrow at the bottom
-                this.ctx.moveTo(tooltipX - 10, tooltipY + tooltipHeight);
-                this.ctx.lineTo(tooltipX, tooltipY + tooltipHeight + 20);  // Make the arrow longer and more pointed
-                this.ctx.lineTo(tooltipX + 10, tooltipY + tooltipHeight);
-                 
-                this.ctx.fill();
-                 
-                // Draw tooltip text
-                this.ctx.fillStyle = '#000000';
-                this.ctx.font = 'bold 16px Arial';
-                this.ctx.textAlign = 'center';
-                this.ctx.fillText('New Stats ' + (rowIndex + 1), tooltipX, tooltipY + tooltipHeight/2 + 5);
-            }
+            this.ctx.fillText(maxValue, lastBarX + maxWidth/2, startY - 12);
+            
+            // Current value below bar
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(progressValue, valueBarX, startY + barHeight + 25);
         }); // End of forEach loop for each data row
     }
     
@@ -784,7 +785,9 @@ export class ChartRenderer {
         }
         
         // Draw labels
-        this.drawLabels(data, progress);
+        if (this.chartType !== 'statBar') { // Skip label drawing for statBar as it has its own labels
+            this.drawLabels(data, progress);
+        }
     }
     
     hexToRgba(hex, alpha) {
