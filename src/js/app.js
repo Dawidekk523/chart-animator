@@ -244,6 +244,11 @@ class ChartAnimatorApp {
         }
         
         tbody.appendChild(newRow);
+        
+        // Disable add row button if we've reached the maximum number of rows (3)
+        if (this.addRowBtn) {
+            this.addRowBtn.disabled = tbody.querySelectorAll('tr').length >= 3;
+        }
     }
     
     updateChartFromTable() {
@@ -280,6 +285,11 @@ class ChartAnimatorApp {
                     });
                 }
             });
+            
+            // Disable add row button if we've reached the maximum number of rows (3)
+            if (this.addRowBtn) {
+                this.addRowBtn.disabled = rows.length >= 3;
+            }
         } else {
             // Normal handling for other chart types
             rows.forEach(row => {

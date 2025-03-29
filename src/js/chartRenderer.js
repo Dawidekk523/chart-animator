@@ -555,7 +555,7 @@ export class ChartRenderer {
     
     drawStatBar(data, progress) {
         // Constants
-        const MAX_ROWS = 4; // Limit to maximum 4 rows
+        const MAX_ROWS = 3; // Limit to maximum 3 rows
         const rowGap = 100; // Reduced row gap for more compact layout
         const containerPadding = 20; // Padding around all stat bars
         

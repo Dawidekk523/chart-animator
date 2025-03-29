@@ -80,7 +80,7 @@ body {
 
 /* Sidebar */
 .sidebar {
-  width: 320px;
+  width: 380px;
   background-color: var(--background-panel);
   border-right: 1px solid var(--border-color);
   overflow-y: auto;
@@ -133,7 +133,6 @@ body {
 .template-preview {
   width: 100%;
   height: 80px;
-  background-color: rgba(255, 255, 255, 0.1);
   border-radius: 6px;
   overflow: hidden;
   display: flex;
@@ -185,33 +184,36 @@ body {
   align-items: center;
   height: 60px;
   margin: 10px auto;
-  width: 90%;
+  width: 70%;
+  background-color: transparent;
 }
 
 .statbar-preview::before {
   content: "";
   position: absolute;
   top: 50%;
-  left: 0;
-  right: 0;
-  height: 30px;
-  transform: translateY(-50%);
-  display: flex;
-  justify-content: space-between;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 40px;
   background-image: repeating-linear-gradient(
     to right,
     #A239FF 0px,
-    #A239FF 8px,
-    transparent 8px,
-    transparent 16px
-  ), repeating-linear-gradient(
-    to right,
-    rgba(255, 255, 255, 0.3) 128px,
-    rgba(255, 255, 255, 0.3) 136px,
-    transparent 136px,
-    transparent 144px
+    #A239FF 14px,
+    transparent 14px,
+    transparent 20px
   );
-  border-radius: 15px;
+  border-radius: 7px;
+}
+
+.template-item.active .statbar-preview::before {
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--primary-color) 0px,
+    var(--primary-color) 14px,
+    transparent 14px,
+    transparent 20px
+  );
 }
 
 /* Data Input Panel */
@@ -358,10 +360,11 @@ body {
 }
 
 .setting-group input[type="range"] {
+  appearance: none;
   -webkit-appearance: none;
   width: 100%;
   height: 6px;
-  border-radius: 5px;
+  border-radius: 3px;
   background: var(--border-color);
   outline: none;
 }
@@ -435,7 +438,7 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 2rem;
+  padding: 0;
   overflow: hidden;
 }
 
@@ -444,9 +447,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: var(--background-panel);
-  border-radius: 12px;
-  box-shadow: var(--shadow-soft);
+  background-color: var(--background-dark);
   overflow: hidden;
 }
 
@@ -459,7 +460,8 @@ body {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1rem 0;
+  padding: 1rem 2rem;
+  background-color: var(--background-dark);
 }
 
 .control-btn {
@@ -492,6 +494,7 @@ body {
 
 #timeSlider {
   flex: 1;
+  appearance: none;
   -webkit-appearance: none;
   height: 6px;
   border-radius: 5px;
