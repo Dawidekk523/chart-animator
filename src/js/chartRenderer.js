@@ -556,7 +556,7 @@ export class ChartRenderer {
     drawStatBar(data, progress) {
         // Constants
         const MAX_ROWS = 4; // Limit to maximum 4 rows
-        const rowGap = 140; // Gap between rows
+        const rowGap = 100; // Reduced row gap for more compact layout
         const containerPadding = 20; // Padding around all stat bars
         
         // Check if data is an array of rows or a single row
@@ -570,11 +570,13 @@ export class ChartRenderer {
         this.ctx.fillStyle = '#0F1118'; // Match the app's dark background
         this.ctx.fillRect(0, 0, this.width, this.height);
         
-        // Calculate total height needed for all rows
-        const totalHeight = rowCount * rowGap;
+        // Calculate total height needed for all rows including all visual elements
+        // This accounts for the bar heights, gaps between bars, and space for labels
+        const effectiveBarHeight = 120; // Bar height plus vertical space for labels (reduced from 140)
+        const totalRowSpace = rowCount * effectiveBarHeight + (rowCount - 1) * rowGap;
         
         // Starting Y position (centered vertically)
-        const startingY = (this.height - totalHeight) / 2;
+        const startingY = (this.height - totalRowSpace) / 2;
         
         // Draw each row
         limitedData.forEach((rowData, rowIndex) => {
@@ -584,15 +586,23 @@ export class ChartRenderer {
             // Configuration
             const barWidth = 14;   // Width of each bar
             const barSpacing = 6;  // Space between bars
-            const barHeight = 90;  // Height of each bar
+            const barHeight = 100;  // Height of each bar (increased from 90 to 100)
             const totalBars = 20; // Total number of bars to display
             const filledColor = rowData.color || `hsl(${(rowIndex * 60 + 260) % 360}, 100%, 65%)`; // Use custom color or generate based on index
             const emptyColor = '#EEEEEE';  // Light color for empty bars
             
             // Calculate values
-            const maxValue = rowData.max || 100; // Maximum value (default 100)
             const minValue = rowData.min || 0;   // Minimum value (default 0)
-            const startValue = rowData.start || 0; // Start value (default 0)
+            const maxValue = rowData.max || 100; // Maximum value (default 100)
+            
+            // Ensure value is within bounds (add safety clamping)
+            const clampedValue = Math.max(minValue, Math.min(maxValue, value));
+            
+            const filledBarsRatio = (clampedValue - minValue) / (maxValue - minValue);
+            const totalFilledBars = filledBarsRatio * totalBars;
+            const filledBarsExact = totalFilledBars * progress;
+            const filledBarsInteger = Math.floor(filledBarsExact);
+            const partialFillRatio = filledBarsExact - filledBarsInteger;
             
             // Apply easing function to make animation smoother
             // This uses cubic easing (ease-in-out)
@@ -605,15 +615,17 @@ export class ChartRenderer {
             // Apply the easing function to our progress
             const easedProgress = easeInOutCubic(progress);
             
-            // Calculate how many bars should be filled based on the value
-            const filledBarsRatio = (value - minValue) / (maxValue - minValue);
-            const totalFilledBars = filledBarsRatio * totalBars;
-            const filledBarsExact = totalFilledBars * easedProgress;
-            const filledBarsInteger = Math.floor(filledBarsExact);
-            const partialFillRatio = filledBarsExact - filledBarsInteger;
+            // Calculate the displayed value using the eased progress for smoother number changes
+            let displayedValue = Math.round(minValue + (clampedValue - minValue) * easedProgress);
+            
+            // Handle text width measurements
+            let minWidth = this.ctx.measureText(minValue.toString()).width;
+            let maxWidth = this.ctx.measureText(maxValue.toString()).width;
+            let valueWidth = this.ctx.measureText(displayedValue.toString()).width;
             
             // Calculate vertical position for this row
-            const rowY = startingY + rowIndex * rowGap;
+            // Use the effective height that includes space for labels
+            const rowY = startingY + rowIndex * (effectiveBarHeight + rowGap);
             
             // Start position (centered horizontally)
             const totalWidth = totalBars * barWidth + (totalBars - 1) * barSpacing;
@@ -622,14 +634,6 @@ export class ChartRenderer {
             
             // Handle text overlap prevention
             const minMaxPadding = 25; // Minimum pixel distance between labels
-            
-            // Calculate the displayed value using the eased progress for smoother number changes
-            const progressValue = Math.round(minValue + (value - minValue) * easedProgress);
-            
-            // Handle text width measurements
-            const valueWidth = this.ctx.measureText(progressValue.toString()).width;
-            const minWidth = this.ctx.measureText(minValue.toString()).width;
-            const maxWidth = this.ctx.measureText(maxValue.toString()).width;
             
             // Position calculation for exact number placement
             const firstBarX = startX + barWidth/2;
@@ -749,7 +753,7 @@ export class ChartRenderer {
             
             // Current value below bar
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(progressValue, valueBarX, startY + barHeight + 25);
+            this.ctx.fillText(displayedValue, valueBarX, startY + barHeight + 25);
         }); // End of forEach loop for each data row
     }
     

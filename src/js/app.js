@@ -258,10 +258,18 @@ class ChartAnimatorApp {
                 
                 if (inputs.length >= 4) {
                     const label = inputs[0].value;
-                    const value = parseFloat(inputs[1].value);
+                    let value = parseFloat(inputs[1].value);
                     const max = parseFloat(inputs[2].value);
                     const min = inputs.length >= 4 ? parseFloat(inputs[3].value) : 0;
                     const color = inputs.length >= 5 ? inputs[4].value : '#A239FF';
+                    
+                    // Ensure value is within bounds
+                    value = Math.max(min, Math.min(max, value));
+                    
+                    // Update the input field if value was clamped
+                    if (value !== parseFloat(inputs[1].value)) {
+                        inputs[1].value = value;
+                    }
                     
                     chartData.push({ 
                         label, 
