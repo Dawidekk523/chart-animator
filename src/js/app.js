@@ -164,7 +164,10 @@ class ChartAnimatorApp {
              }
         });
 
-        this.slides.push(initialSlide);
+        // Ensure the initial slide is added only once
+        if (this.slides.length === 0) {
+            this.slides.push(initialSlide);
+        }
         this.activeSlideIndex = 0;
         
         // Render the initial slide card
@@ -635,7 +638,9 @@ class ChartAnimatorApp {
     addSlide() {
         console.log("addSlide: Triggered"); // <-- Log Start
         // Save the state of the currently active slide *before* creating the new one
-        this.saveCurrentSlideState();
+        if (this.activeSlideIndex >= 0) {
+            this.saveCurrentSlideState();
+        }
         
         const newSlide = {
             id: Date.now(), // Simple unique ID
@@ -652,7 +657,7 @@ class ChartAnimatorApp {
         this.activeSlideIndex = this.slides.length - 1;
         this.renderSlides();
         this.selectSlide(this.activeSlideIndex); // Load the new slide's data
-        console.log("Added slide, total:", this.slides.length);
+        console.log("Added slide, total slides:", this.slides.length);
     }
     
     selectSlide(index) {
@@ -790,7 +795,7 @@ class ChartAnimatorApp {
                 // Add slide number
                 const slideNumber = document.createElement('span');
                 slideNumber.classList.add('slide-number');
-                slideNumber.textContent = index + 1;
+                slideNumber.textContent = index === 0 ? '1' : index + 1; // Ensure numbering starts from 1
                 slideCard.appendChild(slideNumber);
                 
                 // Add chart type preview
