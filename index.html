@@ -138,12 +138,21 @@
                 <div class="preview-container">
                     <canvas id="chartCanvas"></canvas>
                 </div>
-                <div class="timeline-controls">
-                    <button id="playPauseBtn" class="control-btn play-btn"></button>
-                    <input type="range" id="timeSlider" min="0" max="100" value="0">
-                    <span id="currentTimeDisplay">0:00 / 0:00</span>
+            </div>
+
+            <div class="timeline-controls">
+                <button id="playPauseBtn" class="control-btn play-btn"></button>
+                <input type="range" id="timeSlider" min="0" max="100" value="0">
+                <span id="currentTimeDisplay">0:00 / 0:00</span>
+            </div>
+
+            <div id="slides-panel">
+                <div id="slides-container">
+                    <!-- Slide cards will be generated here by JS -->
+                    <div id="add-slide-btn" class="slide-card add-card">+</div>
                 </div>
             </div>
+
         </main>
     </div>
 

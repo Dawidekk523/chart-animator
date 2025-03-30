@@ -17,7 +17,7 @@ class ChartAnimatorApp {
         this.dataManager = new DataManager();
         this.chartRenderer = new ChartRenderer('chartCanvas');
         this.animationController = new AnimationController();
-        this.exportManager = new ExportManager(this.chartRenderer);
+        this.exportManager = new ExportManager(this);
         
         // Initialize UI
         this.initUI();
@@ -25,6 +25,26 @@ class ChartAnimatorApp {
         
         // Load default data
         this.loadDefaultData();
+        
+        // Slide Management
+        this.slidesContainer = document.getElementById('slides-container');
+        this.slides = [];
+        this.activeSlideIndex = -1;
+    }
+    
+    getDefaultData(chartType) {
+        if (chartType === 'statBar') {
+            return [
+                { label: 'Progress', value: 75, max: 100, min: 0, color: '#4A7CFF' }
+            ];
+        } else {
+            // Default for bar, line, pie, etc.
+            return [
+                { label: 'Item A', value: 30, color: '#4A7CFF' },
+                { label: 'Item B', value: 50, color: '#FF4A7CFF' },
+                { label: 'Item C', value: 20, color: '#7CFF4A' }
+            ];
+        }
     }
     
     initUI() {
@@ -33,6 +53,8 @@ class ChartAnimatorApp {
         
         // Data table
         this.dataTable = document.getElementById('dataTable');
+        this.dataTableBody = this.dataTable.querySelector('tbody'); // Added for easier access
+        this.dataTableHead = this.dataTable.querySelector('thead'); // Added for easier access
         this.addRowBtn = document.getElementById('addRowBtn');
         
         // Animation controls
@@ -114,10 +136,44 @@ class ChartAnimatorApp {
     }
     
     loadDefaultData() {
-        // Default data is already in the HTML table
-        // This function can be used to load saved data in the future
-        this.updateChartFromTable();
-        this.generateAnimation();
+        // Explicitly ensure this.slides is an array before use
+        this.slides = this.slides || []; 
+        
+        // Create the initial slide object based on the default HTML state/settings
+        const initialSlide = {
+            id: Date.now(), // Simple unique ID
+            chartType: this.chartType, // Use initial chartType ('bar')
+            data: [], // We'll populate this from the table next
+            settings: {
+                duration: this.animationDuration,
+                easing: this.animationEasing,
+                theme: this.theme
+            }
+        };
+        
+        // Populate initial data from the HTML table
+        const initialRows = this.dataTable.querySelectorAll('tbody tr');
+        initialRows.forEach(row => {
+            const inputs = row.querySelectorAll('input');
+             if (inputs.length >= 3) { // Assuming standard bar chart initially
+                 initialSlide.data.push({
+                    label: inputs[0].value,
+                    value: parseFloat(inputs[1].value),
+                    color: inputs[2].value
+                });
+             }
+        });
+
+        this.slides.push(initialSlide);
+        this.activeSlideIndex = 0;
+        
+        // Render the initial slide card
+        this.renderSlides();
+        
+        // Generate the animation for the initial slide
+        // No need to call updateChartFromTable here, data is already in initialSlide
+        this.dataManager.setData(initialSlide.data); 
+        this.generateAnimation(); 
     }
     
     selectTemplate(item) {
@@ -184,7 +240,7 @@ class ChartAnimatorApp {
                         <tr>
                             <td><input type="text" value="Category 2"></td>
                             <td><input type="number" value="78"></td>
-                            <td><input type="color" value="#FF4A7C"></td>
+                            <td><input type="color" value="#FF4A7CFF"></td>
                             <td><button class="remove-row-btn">×</button></td>
                         </tr>
                     `;
@@ -523,6 +579,256 @@ class ChartAnimatorApp {
     handleResize() {
         this.chartRenderer.resize();
         this.renderCurrentFrame();
+    }
+    
+    saveCurrentSlideState() {
+        if (this.activeSlideIndex < 0 || this.activeSlideIndex >= this.slides.length) {
+            return; // No active slide to save
+        }
+
+        const currentSlide = this.slides[this.activeSlideIndex];
+
+        // 1. Save Data (get it directly from the table)
+        const rows = this.dataTable.querySelectorAll('tbody tr');
+        const chartData = [];
+        if (this.chartType === 'statBar') {
+             rows.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                if (inputs.length >= 4) {
+                    chartData.push({
+                        label: inputs[0].value,
+                        value: parseFloat(inputs[1].value),
+                        max: parseFloat(inputs[2].value),
+                        min: parseFloat(inputs[3].value),
+                        color: inputs.length >= 5 ? inputs[4].value : '#A239FF'
+                    });
+                }
+            });
+        } else {
+            rows.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                 if (inputs.length >= 3) {
+                     chartData.push({
+                        label: inputs[0].value,
+                        value: parseFloat(inputs[1].value),
+                        color: inputs[2].value
+                    });
+                 }
+            });
+        }
+        currentSlide.data = chartData;
+        
+        // 2. Save Chart Type (already updated in this.chartType via selectTemplate)
+        currentSlide.chartType = this.chartType;
+
+        // 3. Save Settings
+        currentSlide.settings = {
+            duration: this.animationDuration, // Already updated via slider listener
+            easing: this.animationEasing,    // Already updated via select listener
+            theme: this.theme                // Already updated via theme listener
+            // Add other settings like loop if implemented later
+        };
+        
+        console.log(`Saved state for slide ${this.activeSlideIndex}:`, currentSlide);
+    }
+
+    addSlide() {
+        console.log("addSlide: Triggered"); // <-- Log Start
+        // Save the state of the currently active slide *before* creating the new one
+        this.saveCurrentSlideState();
+        
+        const newSlide = {
+            id: Date.now(), // Simple unique ID
+            chartType: 'bar', // Default type for new slide
+            data: this.getDefaultData('bar'),
+            settings: {
+                duration: 3000,
+                easing: 'easeInOut',
+                loop: false,
+                theme: 'dark' // Default theme
+            }
+        };
+        this.slides.push(newSlide);
+        this.activeSlideIndex = this.slides.length - 1;
+        this.renderSlides();
+        this.selectSlide(this.activeSlideIndex); // Load the new slide's data
+        console.log("Added slide, total:", this.slides.length);
+    }
+    
+    selectSlide(index) {
+        if (index < 0 || index >= this.slides.length || index === this.activeSlideIndex) return;
+
+        // Save the state of the slide we are leaving
+        this.saveCurrentSlideState();
+
+        this.activeSlideIndex = index;
+        console.log(`Selected slide index: ${index}`);
+        this.renderSlides(); // Re-render to update active state visually
+        this.loadSlideData(index);
+    }
+    
+    loadSlideData(index) {
+        if (index < 0 || index >= this.slides.length) return;
+
+        const slideData = this.slides[index];
+        console.log(`Loading data for slide ${index}:`, slideData);
+
+        // 1. Update Chart Type and Template UI
+        this.chartType = slideData.chartType;
+        this.templateItems.forEach(item => {
+            item.classList.toggle('active', item.dataset.type === this.chartType);
+        });
+
+        // 2. Update Data Table UI
+        this.dataTableBody.innerHTML = ''; // Clear existing rows
+        const isStatBar = this.chartType === 'statBar';
+        
+        // Update table header based on type
+        if (isStatBar) {
+            this.dataTableHead.innerHTML = `
+                <tr>
+                    <th>Stat Name</th>
+                    <th>Current Value</th>
+                    <th>Max Value</th>
+                    <th>Min Value</th>
+                    <th>Color</th>
+                    <th></th>
+                </tr>`;
+        } else {
+             this.dataTableHead.innerHTML = `
+                <tr>
+                    <th>Label</th>
+                    <th>Value</th>
+                    <th>Color</th>
+                    <th></th>
+                </tr>`;
+        }
+
+        // Populate table rows
+        slideData.data.forEach(item => {
+            const newRow = document.createElement('tr');
+            if (isStatBar) {
+                 newRow.innerHTML = `
+                    <td><input type="text" value="${item.label || 'Stat'}"></td>
+                    <td><input type="number" value="${item.value || 0}" min="${item.min || 0}"></td>
+                    <td><input type="number" value="${item.max || 100}" min="${item.min || 0}"></td>
+                    <td><input type="number" value="${item.min || 0}" min="0"></td>
+                    <td><input type="color" value="${item.color || '#A239FF'}"></td>
+                    <td><button class="remove-row-btn">×</button></td>
+                `;
+            } else {
+                newRow.innerHTML = `
+                    <td><input type="text" value="${item.label || 'Item'}"></td>
+                    <td><input type="number" value="${item.value || 0}"></td>
+                    <td><input type="color" value="${item.color || '#4A7CFF'}"></td>
+                    <td><button class="remove-row-btn">×</button></td>
+                `;
+            }
+            this.dataTableBody.appendChild(newRow);
+        });
+        
+         // Enable/disable Add Row button based on type and count
+         if (this.addRowBtn) {
+             this.addRowBtn.disabled = isStatBar && slideData.data.length >= 3;
+         }
+
+        // 3. Update Settings UI
+        this.animationDuration = slideData.settings.duration;
+        this.durationSlider.value = this.animationDuration;
+        this.durationValue.textContent = this.animationDuration.toFixed(1);
+        
+        this.animationEasing = slideData.settings.easing;
+        this.easingSelect.value = this.animationEasing;
+        
+        this.theme = slideData.settings.theme;
+        this.themeOptions.forEach(option => {
+            option.classList.toggle('active', option.dataset.theme === this.theme);
+        });
+        document.body.className = `theme-${this.theme}`; // Apply theme class to body
+        
+        // 4. Update Chart Renderer and Generate Preview
+        this.chartRenderer.setTheme(this.theme);
+        this.chartRenderer.setChartType(this.chartType);
+        this.generateAnimation(); // Regenerate animation based on loaded data/settings
+    }
+    
+    renderSlides() {
+        console.log(`renderSlides: Starting. Total slides: ${this.slides.length}`);
+        
+        // Ensure slidesContainer exists
+        if (!this.slidesContainer) {
+            this.slidesContainer = document.getElementById('slides-container');
+            if (!this.slidesContainer) {
+                console.error('Cannot find slides-container element!');
+                return; // Exit if still not found
+            }
+        }
+        
+        // Store a reference to the add button before clearing
+        const addButton = document.getElementById('add-slide-btn');
+        if (!addButton) {
+            console.error('Cannot find add-slide-btn element!');
+            return; // Exit if not found
+        }
+        
+        // Remove the add button from the DOM temporarily (to preserve it)
+        if (addButton.parentNode) {
+            addButton.parentNode.removeChild(addButton);
+        }
+        
+        // Clear the container (now safe since we've removed the add button)
+        this.slidesContainer.innerHTML = '';
+        
+        // Re-add slide cards
+        this.slides.forEach((slide, index) => {
+            try {
+                // Create slide card
+                const slideCard = document.createElement('div');
+                slideCard.classList.add('slide-card');
+                slideCard.dataset.index = index;
+                
+                // Add slide number
+                const slideNumber = document.createElement('span');
+                slideNumber.classList.add('slide-number');
+                slideNumber.textContent = index + 1;
+                slideCard.appendChild(slideNumber);
+                
+                // Add chart type preview
+                const previewText = document.createElement('span');
+                previewText.textContent = slide.chartType || 'bar'; // Fallback to 'bar' if undefined
+                previewText.style.fontSize = '0.8rem';
+                previewText.style.opacity = '0.7';
+                slideCard.appendChild(previewText);
+                
+                // Highlight active slide
+                if (index === this.activeSlideIndex) {
+                    slideCard.classList.add('active');
+                }
+                
+                // Add click handler
+                slideCard.addEventListener('click', () => {
+                    this.selectSlide(index);
+                });
+                
+                // Append to container
+                this.slidesContainer.appendChild(slideCard);
+            } catch (error) {
+                console.error(`Error creating slide ${index}:`, error);
+            }
+        });
+        
+        // Append the add button back to the container
+        this.slidesContainer.appendChild(addButton);
+        
+        // Ensure the add button has a click handler
+        this.handleAddSlideClick = this.handleAddSlideClick || this.addSlide.bind(this);
+        addButton.removeEventListener('click', this.handleAddSlideClick); // Remove any existing to prevent duplicates
+        addButton.addEventListener('click', this.handleAddSlideClick);
+        
+        // Store reference to the add button
+        this.addSlideBtn = addButton;
+        
+        console.log('renderSlides: Completed successfully');
     }
 }
 
