@@ -525,6 +525,7 @@ body {
   padding-bottom: 10px; /* Space for scrollbar */
   scrollbar-width: thin;
   scrollbar-color: var(--primary-color) var(--background-dark);
+  padding-top: 10px; /* Added space for hover effect */
 }
 
 #slides-container::-webkit-scrollbar {
@@ -557,11 +558,14 @@ body {
   font-size: 1.2rem;
   font-weight: 500;
   position: relative; /* For potential numbering */
+  overflow: visible; /* Ensure content isn't cut off */
 }
 
 .slide-card:hover {
   border-color: var(--text-secondary);
   transform: translateY(-2px);
+  z-index: 1; /* Bring hovered card to front */
+  margin-top: -2px; /* Adjust for hover effect */
 }
 
 .slide-card.active {

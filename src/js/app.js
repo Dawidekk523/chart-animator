@@ -24,12 +24,29 @@ class ChartAnimatorApp {
         this.setupEventListeners();
         
         // Load default data
+        this.slides = [];
+        this.activeSlideIndex = 0; // Set initial active slide index to 0
+        
+        // Add initial slide explicitly
+        const initialSlide = {
+            id: Date.now(),
+            chartType: 'bar',
+            data: this.getDefaultData('bar'),
+            settings: {
+                duration: this.animationDuration,
+                easing: this.animationEasing,
+                theme: this.theme
+            }
+        };
+        this.slides.push(initialSlide);
+        this.renderSlides();
+        
         this.loadDefaultData();
         
         // Slide Management
         this.slidesContainer = document.getElementById('slides-container');
-        this.slides = [];
-        this.activeSlideIndex = -1;
+        this.slides = this.slides; // Explicitly ensure this.slides is an array before use
+        this.activeSlideIndex = 0; // Set initial active slide index to 0
     }
     
     getDefaultData(chartType) {
@@ -108,10 +125,6 @@ class ChartAnimatorApp {
             this.animationEasing = this.easingSelect.value;
         });
         
-        this.themeOptions.forEach(option => {
-            option.addEventListener('click', () => this.selectTheme(option));
-        });
-        
         // Animation controls
         this.playPauseBtn.addEventListener('click', () => this.togglePlayback());
         this.timeSlider.addEventListener('input', () => {
@@ -167,8 +180,8 @@ class ChartAnimatorApp {
         // Ensure the initial slide is added only once
         if (this.slides.length === 0) {
             this.slides.push(initialSlide);
+            this.activeSlideIndex = 0; // Set the initial active slide index
         }
-        this.activeSlideIndex = 0;
         
         // Render the initial slide card
         this.renderSlides();
@@ -294,13 +307,7 @@ class ChartAnimatorApp {
     }
     
     selectTheme(option) {
-        this.themeOptions.forEach(o => o.classList.remove('active'));
-        option.classList.add('active');
-        this.theme = option.dataset.theme;
-        
-        // Update the renderer with the new theme
-        this.chartRenderer.setTheme(this.theme);
-        this.renderCurrentFrame();
+        console.log('Theme change disabled.');
     }
     
     addDataRow() {
@@ -639,6 +646,7 @@ class ChartAnimatorApp {
         console.log("addSlide: Triggered"); // <-- Log Start
         // Save the state of the currently active slide *before* creating the new one
         if (this.activeSlideIndex >= 0) {
+            console.log(`Saving current slide state for index: ${this.activeSlideIndex}`);
             this.saveCurrentSlideState();
         }
         
@@ -655,9 +663,10 @@ class ChartAnimatorApp {
         };
         this.slides.push(newSlide);
         this.activeSlideIndex = this.slides.length - 1;
+        console.log(`Added new slide. Total slides now: ${this.slides.length}`);
         this.renderSlides();
-        this.selectSlide(this.activeSlideIndex); // Load the new slide's data
-        console.log("Added slide, total slides:", this.slides.length);
+        setTimeout(() => this.selectSlide(this.activeSlideIndex), 0); // Ensure UI updates immediately
+        console.log(`New active slide index: ${this.activeSlideIndex}`);
     }
     
     selectSlide(index) {
@@ -746,9 +755,6 @@ class ChartAnimatorApp {
         this.easingSelect.value = this.animationEasing;
         
         this.theme = slideData.settings.theme;
-        this.themeOptions.forEach(option => {
-            option.classList.toggle('active', option.dataset.theme === this.theme);
-        });
         document.body.className = `theme-${this.theme}`; // Apply theme class to body
         
         // 4. Update Chart Renderer and Generate Preview
@@ -795,7 +801,7 @@ class ChartAnimatorApp {
                 // Add slide number
                 const slideNumber = document.createElement('span');
                 slideNumber.classList.add('slide-number');
-                slideNumber.textContent = index === 0 ? '1' : index + 1; // Ensure numbering starts from 1
+                slideNumber.textContent = index + 1; // Ensure numbering starts from 1
                 slideCard.appendChild(slideNumber);
                 
                 // Add chart type preview
